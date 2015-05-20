@@ -1,0 +1,37 @@
+﻿<Properties>
+  <MonoDevelop.Ide.Workspace ActiveConfiguration="Debug" />
+  <MonoDevelop.Ide.Workbench ActiveDocument="Assets/_Scripts/EnemyController.cs">
+    <Files>
+      <File FileName="Assets/Plugins/Android/DataSnapshot.cs" Line="26" Column="58" />
+      <File FileName="Assets/Plugins/Android/FirebaseError.cs" Line="15" Column="24" />
+      <File FileName="Assets/Plugins/Android/Firebase.cs" Line="27" Column="19" />
+      <File FileName="Assets/_Scripts/PlayerController.cs" Line="26" Column="60" />
+      <File FileName="Assets/Plugins/Android/Query.cs" Line="37" Column="20" />
+      <File FileName="Assets/_Scripts/GameController.cs" Line="63" Column="4" />
+      <File FileName="Assets/_Scripts/Mover.cs" Line="13" Column="1" />
+      <File FileName="Assets/_Scripts/EnemyController.cs" Line="33" Column="28" />
+      <File FileName="Assets/_Scripts/DestroyByTime.cs" Line="1" Column="1" />
+      <File FileName="Assets/_Scripts/DestroyByContact.cs" Line="32" Column="29" />
+    </Files>
+    <Pads>
+      <Pad Id="ProjectPad">
+        <State expanded="True">
+          <Node name="Assembly-CSharp" expanded="True">
+            <Node name="_Scripts" expanded="True">
+              <Node name="EnemyController.cs" selected="True" />
+            </Node>
+          </Node>
+          <Node name="Assembly-CSharp-firstpass" expanded="True">
+            <Node name="Plugins" expanded="True">
+              <Node name="Android" expanded="True" />
+            </Node>
+          </Node>
+        </State>
+      </Pad>
+    </Pads>
+  </MonoDevelop.Ide.Workbench>
+  <MonoDevelop.Ide.DebuggingService.Breakpoints>
+    <BreakpointStore />
+  </MonoDevelop.Ide.DebuggingService.Breakpoints>
+  <MonoDevelop.Ide.DebuggingService.PinnedWatches />
+</Properties>
