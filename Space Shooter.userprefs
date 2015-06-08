@@ -1,30 +1,34 @@
 ﻿<Properties>
   <MonoDevelop.Ide.Workspace ActiveConfiguration="Debug" />
-  <MonoDevelop.Ide.Workbench ActiveDocument="Assets/_Scripts/EnemyController.cs">
+  <MonoDevelop.Ide.Workbench ActiveDocument="Assets/Plugins/iOS/QueryiOSImpl.cs">
     <Files>
-      <File FileName="Assets/Plugins/Android/DataSnapshot.cs" Line="26" Column="58" />
-      <File FileName="Assets/Plugins/Android/FirebaseError.cs" Line="15" Column="24" />
-      <File FileName="Assets/Plugins/Android/Firebase.cs" Line="27" Column="19" />
-      <File FileName="Assets/_Scripts/PlayerController.cs" Line="26" Column="60" />
-      <File FileName="Assets/Plugins/Android/Query.cs" Line="37" Column="20" />
-      <File FileName="Assets/_Scripts/GameController.cs" Line="63" Column="4" />
-      <File FileName="Assets/_Scripts/Mover.cs" Line="13" Column="1" />
-      <File FileName="Assets/_Scripts/EnemyController.cs" Line="33" Column="28" />
-      <File FileName="Assets/_Scripts/DestroyByTime.cs" Line="1" Column="1" />
-      <File FileName="Assets/_Scripts/DestroyByContact.cs" Line="32" Column="29" />
+      <File FileName="Assets/Plugins/iOS/QueryiOSImpl.cs" Line="49" Column="15" />
+      <File FileName="Assets/Plugins/Firebase/Firebase.cs" Line="1" Column="1" />
+      <File FileName="Assets/_Scripts/FirebaseController.cs" Line="40" Column="21" />
+      <File FileName="Assets/Plugins/Firebase/IFirebase.cs" Line="1" Column="1" />
+      <File FileName="Assets/Plugins/Firebase/IDataSnapshot.cs" Line="1" Column="1" />
+      <File FileName="Assets/Plugins/iOS/DataSnapshotiOSImpl.cs" Line="22" Column="20" />
+      <File FileName="Assets/Plugins/Firebase/IQuery.cs" Line="1" Column="1" />
+      <File FileName="Assets/Plugins/Android/DataSnapshotAndroidImpl.cs" Line="1" Column="1" />
+      <File FileName="Assets/_Scripts/PlayerController.cs" Line="43" Column="3" />
+      <File FileName="Assets/_Scripts/EnemyController.cs" Line="21" Column="43" />
+      <File FileName="Assets/Plugins/Firebase/IFirebaseError.cs" Line="1" Column="1" />
+      <File FileName="Assets/Plugins/Firebase/miniJSON.cs" Line="1" Column="1" />
+      <File FileName="Assets/Plugins/Android/FirebaseAndroidImpl.cs" Line="1" Column="1" />
+      <File FileName="Assets/_Scripts/TapToMove.cs" Line="55" Column="1" />
+      <File FileName="Assets/Plugins/iOS/FirebaseiOSImpl.cs" Line="26" Column="16" />
+      <File FileName="Assets/Plugins/iOS/FirebaseErroriOSImpl.cs" Line="1" Column="1" />
     </Files>
     <Pads>
       <Pad Id="ProjectPad">
         <State expanded="True">
-          <Node name="Assembly-CSharp" expanded="True">
-            <Node name="_Scripts" expanded="True">
-              <Node name="EnemyController.cs" selected="True" />
-            </Node>
-          </Node>
           <Node name="Assembly-CSharp-firstpass" expanded="True">
             <Node name="Plugins" expanded="True">
-              <Node name="Android" expanded="True" />
+              <Node name="Android" selected="True" />
+              <Node name="Firebase" expanded="True" />
+              <Node name="iOS" expanded="True" />
             </Node>
+            <Node name="StreamingAssets" expanded="True" />
           </Node>
         </State>
       </Pad>

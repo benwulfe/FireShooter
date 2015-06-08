@@ -20,9 +20,27 @@ public class PlayerController : MonoBehaviour
 	public GameObject shot;
 	public Transform shotSpawn;
 	public float fireRate;
-	
+
 	private float nextFire;
-	private Firebase positionRefx, positionRefy, positionRefz;
+	FirebaseController firebaseController;
+	private float oldx;
+	private int count;
+
+	void Start() {
+		firebaseController = GetComponent<FirebaseController> ();
+		if (Application.platform == RuntimePlatform.Android) {
+			firebaseController.SetPath ("https://incandescent-torch-2575.firebaseio.com/Android/");
+		} else {
+			firebaseController.SetPath ("https://incandescent-torch-2575.firebaseio.com/IPhone/");
+		}
+
+		firebaseController.HandleCall ("Shot", (str) => {
+			Instantiate (shot, shotSpawn.position, shotSpawn.rotation);
+			GetComponent<AudioSource> ().Play ();				
+		});
+
+		InvokeRepeating ("RepeatingFunction", .1f, .1f);
+	}
 
 	void Update ()
 	{
@@ -31,29 +49,25 @@ public class PlayerController : MonoBehaviour
 			foreach (Touch touch in Input.touches) {
 				if (touch.phase != TouchPhase.Ended && touch.phase != TouchPhase.Canceled) {
 					nextFire = Time.time + fireRate;
-					Instantiate(shot, shotSpawn.position, shotSpawn.rotation);
-					GetComponent<AudioSource>().Play ();				}
+					firebaseController.RemoteCall("Shot", "null");
+				}
 			}
 		}
 	}
-	
-	void FixedUpdate ()
-	{
-		GetComponent<Rigidbody> ().rotation = Quaternion.Euler (0.0f, 0.0f, GetComponent<Rigidbody> ().velocity.x * -tilt);
 
-		if (positionRefx == null) {
-			Firebase.SetAndroidContext ();
-			Firebase firebaseObject = new Firebase ("https://incandescent-torch-2575.firebaseio.com/Player0/");
-			Firebase positionRef = firebaseObject.Child ("Position");
-			Firebase movementRef = firebaseObject.Child ("Movement");
-					
-			positionRefx = positionRef.Child ("x");
-			positionRefy = positionRef.Child ("y");
-			positionRefz = positionRef.Child ("z");
+	void RepeatingFunction ()
+	{
+		if (gameObject.transform.position.x > oldx) {
+			GetComponent<Rigidbody> ().rotation = Quaternion.Euler (0.0f, 0f, -30);
+		} else if (gameObject.transform.position.x < oldx) {
+			GetComponent<Rigidbody> ().rotation = Quaternion.Euler (0.0f, 0f, 30f);
+		} else if (GetComponent<Rigidbody> ().rotation.eulerAngles.z  != 0) {
+			GetComponent<Rigidbody> ().rotation = Quaternion.Euler (0.0f, 0f, 0f);
 		}
-		
-		positionRefx.SetValue (GetComponent<Rigidbody> ().position.x);
-		positionRefy.SetValue (GetComponent<Rigidbody> ().position.y);
-		positionRefz.SetValue (GetComponent<Rigidbody> ().position.z);
+		count = (count + 1) % 5;
+		if (count == 0) {
+			oldx = gameObject.transform.position.x;
+		}
 	}
+	
 }
