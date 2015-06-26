@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 using System.Collections;
 using System;
 using System.Collections.Generic;
@@ -10,6 +10,9 @@ public class FirebaseController : MonoBehaviour {
 	private Queue<RPCItem> invokeQueue = new Queue<RPCItem>();
 	private object sync = new object ();
 	private Dictionary<string, IFirebase> firebases = new Dictionary<string, IFirebase> ();
+	private Dictionary<string, object> positionMap = new Dictionary<string, object >();
+	private Func<Vector3, Vector3> transform;
+	private Rigidbody rigidBody;
 
 	public string path;
 	public bool isNPC;
@@ -26,6 +29,10 @@ public class FirebaseController : MonoBehaviour {
 	public void SetPath(string path) {
 		this.path = path;
 		Initialize ();
+	}
+
+	public void SetTransform(Func<Vector3, Vector3> transform) {
+		this.transform = transform;
 	}
 
 	public void RemoteCall(string objectName, string value) {
@@ -62,6 +69,8 @@ public class FirebaseController : MonoBehaviour {
 	void Initialize() {
 		if (!initialized && !string.IsNullOrEmpty (path)) {
 			initialized = true;
+			rigidBody = GetComponent<Rigidbody> ();
+
 			firebaseObject = Firebase.CreateNew (path);
 			if (firebaseObject != null) {
 				FirebaseDebugLog.Initialize(path + "/DebugLog");
@@ -72,15 +81,15 @@ public class FirebaseController : MonoBehaviour {
 				positionRefz = positionRef.Child ("z");
 
 				if (isNPC) {
-//					positionRef.ValueUpdated += (object sender, ChangedEventArgs e) => {
-//						var dictionary = e.DataSnapshot.GetDictionaryValue();
-//						positionx = Convert.ToSingle(dictionary["x"]);
-//						positiony = Convert.ToSingle(dictionary["y"]);
-//						positionz = Convert.ToSingle(dictionary["z"]);
-//					};
-					positionRefx.ValueUpdated += (object sender, ChangedEventArgs e) => positionx = e.DataSnapshot.GetFloatValue ();
-					positionRefy.ValueUpdated += (object sender, ChangedEventArgs e) => positiony = e.DataSnapshot.GetFloatValue ();
-					positionRefz.ValueUpdated += (object sender, ChangedEventArgs e) => positionz = e.DataSnapshot.GetFloatValue ();
+					positionRef.ValueUpdated += (object sender, ChangedEventArgs e) => {
+						var dictionary = e.DataSnapshot.GetDictionaryValue();
+						positionx = Convert.ToSingle(dictionary["x"]);
+						positiony = Convert.ToSingle(dictionary["y"]);
+						positionz = Convert.ToSingle(dictionary["z"]);
+					};
+//					positionRefx.ValueUpdated += (object sender, ChangedEventArgs e) => positionx = e.DataSnapshot.GetFloatValue ();
+//					positionRefy.ValueUpdated += (object sender, ChangedEventArgs e) => positiony = e.DataSnapshot.GetFloatValue ();
+//					positionRefz.ValueUpdated += (object sender, ChangedEventArgs e) => positionz = e.DataSnapshot.GetFloatValue ();
 				}
 			}
 		}
@@ -95,23 +104,28 @@ public class FirebaseController : MonoBehaviour {
 			invokeQueue.CopyTo(rpcItems, 0);
 			invokeQueue.Clear();
 		}
-		foreach (RPCItem item in rpcItems) {
-			item.Method(item.Value);
+		if (rpcItems != null) {
+			foreach (RPCItem item in rpcItems) {
+				item.Method (item.Value);
+			}
 		}
 
 		if (positionRefx != null && positionRefy != null && positionRefz != null) {
 			if (isNPC) {
-				GetComponent<Rigidbody> ().position = new Vector3 
-				(
-					-positionx,  
-					0.0f, 
-					(5f - positionz + 5)
-				);
+				Vector3 raw = new Vector3(positionx,  
+						positiony, 
+						positionz);
+
+				rigidBody.position = transform != null ? transform(raw) : raw;
 			}
 			else {
-				positionRefx.SetValue (GetComponent<Rigidbody> ().position.x);
-				positionRefy.SetValue (GetComponent<Rigidbody> ().position.y);
-				positionRefz.SetValue (GetComponent<Rigidbody> ().position.z);
+				positionMap["x"] = rigidBody.position.x;
+				positionMap["y"] = rigidBody.position.y;
+				positionMap["z"] = rigidBody.position.z;
+				positionRef.SetValue(positionMap);
+//				positionRefx.SetValue (GetComponent<Rigidbody> ().position.x);
+//				positionRefy.SetValue (GetComponent<Rigidbody> ().position.y);
+//				positionRefz.SetValue (GetComponent<Rigidbody> ().position.z);
 			}
 		}
 	}

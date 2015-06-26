@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Runtime.InteropServices;
 using System;
+using System.Collections.Generic;
 
 #if UNITY_IOS
 internal class FirebaseiOSImpl : QueryiOSImpl, IFirebase {
@@ -53,7 +54,10 @@ internal class FirebaseiOSImpl : QueryiOSImpl, IFirebase {
 	
 	[DllImport ("__Internal")]
 	private static extern void _FirebaseSetString (IntPtr firebase, string value);
-	
+
+	[DllImport ("__Internal")]
+	private static extern void _FirebaseSetJson (IntPtr firebase, string json);
+
 	[DllImport ("__Internal")]
 	private static extern void _FirebaseSetFloat (IntPtr firebase, float value);
 	
@@ -90,6 +94,11 @@ internal class FirebaseiOSImpl : QueryiOSImpl, IFirebase {
 	public void SetValue (string value)
 	{
 		_FirebaseSetString (GetiOSObject (), value);
+	}
+
+	public void SetValue (IDictionary<string, object> value) {
+		string jsonString = MiniJSON.Json.Serialize (value);
+		_FirebaseSetJson (GetiOSObject (), jsonString);
 	}
 
 	public void SetValue (float value)

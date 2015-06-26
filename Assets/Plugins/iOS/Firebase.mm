@@ -86,6 +86,14 @@ extern "C" {
         [myFirebaseRef setValue:CreateNSString(value)];
     }
     
+    void _FirebaseSetJson(void* firebase, const char *value) {
+        Firebase *myFirebaseRef = (__bridge Firebase*) (firebase);
+        NSData *data = [CreateNSString(value) dataUsingEncoding:NSUTF8StringEncoding];
+        id json = [NSJSONSerialization JSONObjectWithData:data options:0 error:nil];
+        
+        [myFirebaseRef setValue:json];
+    }
+    
     void _FirebaseSetFloat(void* firebase, float value) {
         Firebase *myFirebaseRef = (__bridge Firebase*) (firebase);
         [myFirebaseRef setValue:[NSNumber numberWithFloat: value]];

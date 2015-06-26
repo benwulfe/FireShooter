@@ -8,6 +8,8 @@ internal class QueryAndroidImpl : IQuery {
 	EventHandler<ChangedEventArgs> valueUpdatedEvent, childAddedEvent;
 	ValueEventListener valueupdateListener;
 	ChildEventListener childAddedListener;
+	static AndroidJavaObject objectmapper;
+	static AndroidJavaClass objectclass;
 
 	protected QueryAndroidImpl(AndroidJavaObject nativeReference) {
 		queryRef = nativeReference;
@@ -15,6 +17,21 @@ internal class QueryAndroidImpl : IQuery {
 	
 	protected AndroidJavaObject GetJavaObject() {
 		return queryRef;
+	}
+
+	internal static AndroidJavaObject GetObjectMapper() {
+		// it isn't critical that this is protected against multithreaded access.
+		if (objectmapper == null) {
+			objectmapper = new AndroidJavaObject ("com.fasterxml.jackson.databind.ObjectMapper");
+		}
+		return objectmapper;
+	}
+
+	internal static AndroidJavaClass GetObjectClass() {
+		if (objectclass == null) {
+			objectclass = new AndroidJavaClass("java.lang.Object");
+		}
+		return objectclass;
 	}
 
 	public event EventHandler<ChangedEventArgs> ValueUpdated {

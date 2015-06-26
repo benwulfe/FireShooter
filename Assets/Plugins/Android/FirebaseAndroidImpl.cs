@@ -2,6 +2,7 @@
 using System.Collections;
 using System;
 using System.Runtime.InteropServices;
+using System.Collections.Generic;
 
 #if UNITY_ANDROID
 internal class FirebaseAndroidImpl : QueryAndroidImpl, IFirebase
@@ -74,6 +75,12 @@ internal class FirebaseAndroidImpl : QueryAndroidImpl, IFirebase
 	public void SetValue (float value)
 	{
 		GetJavaObject().Call ("setValue", new AndroidJavaObject ("java.lang.Float", value));
+	}
+
+	public void SetValue (IDictionary<string, object> value) {
+		string jsonString = MiniJSON.Json.Serialize (value);
+		AndroidJavaObject jsonObject = GetObjectMapper ().Call<AndroidJavaObject> ("readValue", jsonString, GetObjectClass ());
+		GetJavaObject().Call ("setValue", jsonObject);
 	}
 	
 	public void SetValue (float value, string priority, Action<IFirebaseError, IFirebase> listener)
