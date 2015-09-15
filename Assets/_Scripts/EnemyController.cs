@@ -23,7 +23,7 @@ public class EnemyController : MonoBehaviour {
 			Instantiate(shot, shotSpawn.position, shotSpawn.rotation);
 		});
 
-		firebaseController.SetTransform (vector => new Vector3 (
+		GetComponent<TapToMove>().SetTransform (vector => new Vector3 (
 			-vector.x,  
 			0.0f, 
 			(5f - vector.z + 5f)

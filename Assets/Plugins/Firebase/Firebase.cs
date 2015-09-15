@@ -10,12 +10,12 @@ public class Firebase  {
 	}
 
 	static Firebase() {
-#if UNITY_ANDROID
-		Register (new FirebaseAndroidImpl.Factory ());
-#endif
-
 #if UNITY_IOS
 		Register (new FirebaseiOSImpl.Factory ());
+#endif
+
+#if UNITY_ANDROID 
+		Register (new FirebaseAndroidImpl.Factory ());
 #endif
 	}
 

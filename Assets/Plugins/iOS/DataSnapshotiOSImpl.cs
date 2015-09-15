@@ -61,42 +61,56 @@ internal class DataSnapshotiOSImpl : IDataSnapshot {
 		return new DataSnapshotiOSImpl (_DataSnapshotGetChild (GetSnapShotReference (), path));
 	}
 
-	public bool Exists ()
+	public bool Exists
 	{
-		return _DataSnapshotExists (GetSnapShotReference ()) != IntPtr.Zero;
-	}
-
-	public string GetKey ()
-	{
-		return _DataSnapshotGetKey (GetSnapShotReference ());
-	}
-
-	public object GetPriority ()
-	{
-		return _DataSnapshotGetPriority (GetSnapShotReference ());
-	}
-
-	public IFirebase GetRef ()
-	{
-		return new FirebaseiOSImpl (_DataSnapshotGetRef (GetSnapShotReference ()));
-	}
-
-	public float GetFloatValue ()
-	{
-		return _DataSnapshotGetFloatValue (GetSnapShotReference ());
-	}
-
-	public string GetStringValue ()
-	{
-		return _DataSnapshotGetStringValue (GetSnapShotReference ());
-	}
-
-	public Dictionary<string, object> GetDictionaryValue() {
-		string dictionaryJSON = _DataSnapshotGetDictionary (GetSnapShotReference ());
-		if (String.IsNullOrEmpty (dictionaryJSON)) {
-			return null;
+		get {
+			return _DataSnapshotExists (GetSnapShotReference ()) != IntPtr.Zero;
 		}
-		return MiniJSON.Json.Deserialize(dictionaryJSON) as Dictionary<string,object>;
+	}
+
+	public string Key 
+	{
+		get {
+			return _DataSnapshotGetKey (GetSnapShotReference ());
+		}
+	}
+
+	public object Priority
+	{
+		get {
+			return _DataSnapshotGetPriority (GetSnapShotReference ());
+		}
+	}
+
+	public IFirebase Ref
+	{
+		get {
+			return new FirebaseiOSImpl (_DataSnapshotGetRef (GetSnapShotReference ()));
+		}
+	}
+
+	public float FloatValue
+	{
+		get {
+			return _DataSnapshotGetFloatValue (GetSnapShotReference ());
+		}
+	}
+
+	public string StringValue
+	{
+		get {
+			return _DataSnapshotGetStringValue (GetSnapShotReference ());
+		}
+	}
+
+	public Dictionary<string, object> DictionaryValue {
+		get {
+			string dictionaryJSON = _DataSnapshotGetDictionary (GetSnapShotReference ());
+			if (String.IsNullOrEmpty (dictionaryJSON)) {
+				return null;
+			}
+			return MiniJSON.Json.Deserialize (dictionaryJSON) as Dictionary<string,object>;
+		}
 	}
 
 	public bool HasChild (string path)

@@ -28,10 +28,10 @@ public class PlayerController : MonoBehaviour
 
 	void Start() {
 		firebaseController = GetComponent<FirebaseController> ();
-		if (Application.platform == RuntimePlatform.Android) {
-			firebaseController.SetPath ("https://incandescent-torch-2575.firebaseio.com/Android/");
-		} else {
+		if (Application.platform == RuntimePlatform.IPhonePlayer) {
 			firebaseController.SetPath ("https://incandescent-torch-2575.firebaseio.com/IPhone/");
+		} else {
+			firebaseController.SetPath ("https://incandescent-torch-2575.firebaseio.com/Android/");
 		}
 
 		firebaseController.HandleCall ("Shot", (str) => {
@@ -45,12 +45,10 @@ public class PlayerController : MonoBehaviour
 	void Update ()
 	{
 		if (Time.time > nextFire) {
-
-			foreach (Touch touch in Input.touches) {
-				if (touch.phase != TouchPhase.Ended && touch.phase != TouchPhase.Canceled) {
-					nextFire = Time.time + fireRate;
-					firebaseController.RemoteCall("Shot", "null");
-				}
+			if ((Input.touchCount > 0 && Input.GetTouch(0).phase == TouchPhase.Began) 
+			     || (Input.GetMouseButtonDown(0))) {
+				nextFire = Time.time + fireRate;
+				firebaseController.RemoteCall("Shot", "null");
 			}
 		}
 	}

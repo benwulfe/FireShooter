@@ -6,11 +6,12 @@ public interface IDataSnapshot  {
 	IDataSnapshot Child (string path);
 	bool HasChild (string path);
 
-	bool Exists ();
-	string GetKey ();
-	object GetPriority ();
-	IFirebase GetRef ();
-	float GetFloatValue ();
-	string GetStringValue ();
-	Dictionary<string, object> GetDictionaryValue();
+	bool Exists  { get; }
+	string Key  { get; }
+	object Priority { get; }
+	IFirebase Ref { get; }
+
+	float FloatValue { get; }
+	string StringValue { get; }
+	Dictionary<string, object> DictionaryValue { get; }
 }

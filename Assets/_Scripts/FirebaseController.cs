@@ -4,16 +4,20 @@ using System;
 using System.Collections.Generic;
 
 public class FirebaseController : MonoBehaviour {
-	private IFirebase firebaseObject,positionRef, positionRefx, positionRefy, positionRefz;
-	private volatile float positionx, positiony, positionz;
+	private const string ServerTimeAtChange = "ServerTimeAtChange";
+
+	private IFirebase firebaseObject, dataRef, timeSync;
 	private bool initialized = false;
 	private Queue<RPCItem> invokeQueue = new Queue<RPCItem>();
 	private object sync = new object ();
 	private Dictionary<string, IFirebase> firebases = new Dictionary<string, IFirebase> ();
-	private Dictionary<string, object> positionMap = new Dictionary<string, object >();
-	private Func<Vector3, Vector3> transform;
-	private Rigidbody rigidBody;
+	private volatile Dictionary<string, object> incomingDataMap = null;
+	private long timeOffset = long.MinValue;
+	private static readonly DateTime Epoch = new DateTime (1970, 1, 1);
 
+	private Dictionary<string, object> currentDataMap = new Dictionary<string, object >();
+	private Dictionary<string, object> dirtyDataMap = new Dictionary<string, object >();
+	
 	public string path;
 	public bool isNPC;
 
@@ -29,10 +33,6 @@ public class FirebaseController : MonoBehaviour {
 	public void SetPath(string path) {
 		this.path = path;
 		Initialize ();
-	}
-
-	public void SetTransform(Func<Vector3, Vector3> transform) {
-		this.transform = transform;
 	}
 
 	public void RemoteCall(string objectName, string value) {
@@ -57,10 +57,10 @@ public class FirebaseController : MonoBehaviour {
 					firebases.Add(objectName, child);
 				}
 			}
-
+			Debug.Log ("hooking childadded for " + child.Key);
 			child.ChildAdded += (object sender, ChangedEventArgs e) => {
 				lock(sync) {
-					invokeQueue.Enqueue(new RPCItem() { Method = callback, Value = e.DataSnapshot.GetStringValue()});
+					invokeQueue.Enqueue(new RPCItem() { Method = callback, Value = e.DataSnapshot.StringValue});
 				}
 			};
 		}
@@ -69,40 +69,98 @@ public class FirebaseController : MonoBehaviour {
 	void Initialize() {
 		if (!initialized && !string.IsNullOrEmpty (path)) {
 			initialized = true;
-			rigidBody = GetComponent<Rigidbody> ();
 
 			firebaseObject = Firebase.CreateNew (path);
 			if (firebaseObject != null) {
 				FirebaseDebugLog.Initialize(path + "/DebugLog");
-				positionRef = firebaseObject.Child ("Position");
-
-				positionRefx = positionRef.Child ("x");
-				positionRefy = positionRef.Child ("y");
-				positionRefz = positionRef.Child ("z");
+				dataRef = firebaseObject.Child ("DataSync");
 
 				if (isNPC) {
-					positionRef.ValueUpdated += (object sender, ChangedEventArgs e) => {
-						var dictionary = e.DataSnapshot.GetDictionaryValue();
-						positionx = Convert.ToSingle(dictionary["x"]);
-						positiony = Convert.ToSingle(dictionary["y"]);
-						positionz = Convert.ToSingle(dictionary["z"]);
+					dataRef.ValueUpdated += (object sender, ChangedEventArgs e) => {
+						incomingDataMap = e.DataSnapshot.DictionaryValue;
 					};
-//					positionRefx.ValueUpdated += (object sender, ChangedEventArgs e) => positionx = e.DataSnapshot.GetFloatValue ();
-//					positionRefy.ValueUpdated += (object sender, ChangedEventArgs e) => positiony = e.DataSnapshot.GetFloatValue ();
-//					positionRefz.ValueUpdated += (object sender, ChangedEventArgs e) => positionz = e.DataSnapshot.GetFloatValue ();
 				}
 			}
+
+			Uri pathUri = new Uri(path);
+			string offsetPath = pathUri.GetLeftPart(System.UriPartial.Authority) + @"/.info/serverTimeOffset";
+			timeSync = Firebase.CreateNew(offsetPath);
+			if (timeSync != null) {
+				timeSync.ValueUpdated += (object sender, ChangedEventArgs e) => {
+					timeOffset = (long)e.DataSnapshot.FloatValue;
+				};
+			}
+		}
+	}
+
+	public object GetValue(string key) {
+		return currentDataMap [key];
+	}
+
+	public bool TryGetValue<T>(string key, out T value) {
+		object objValue = null;
+		if (currentDataMap.TryGetValue (key, out objValue)) { 
+		    if (typeof(T).IsAssignableFrom (objValue.GetType ())) {
+				value = (T)objValue;
+				return true;
+			}
+			else if (objValue.GetType() == typeof(Int64) && typeof(T) == typeof(double)) {
+				Int64 intValue = (Int64) objValue;
+				objValue = (double)intValue;
+				value = (T)objValue; //TODO
+				return true;
+			}
+			else FirebaseDebugLog.Log("bad type: " + objValue.GetType().FullName);
+		}
+		value = default(T);
+		return false;
+	}
+
+	public void BeginSetValue(string key, object value) {
+		dirtyDataMap [key] = value;
+	}
+
+	private bool IsOffsetValid() {
+		return timeOffset != long.MinValue;
+	}
+
+	private long GetCurrentServerEpochTime() {
+		TimeSpan t = DateTime.UtcNow - Epoch;
+		return (long)t.TotalMilliseconds + (IsOffsetValid() ? timeOffset : 0);
+	}
+
+	public bool GetUpdateAge(ref long estimatedAge) {
+		if (currentDataMap.ContainsKey (ServerTimeAtChange) && IsOffsetValid()) {
+			estimatedAge = GetCurrentServerEpochTime () - (long)currentDataMap [ServerTimeAtChange];
+			return true;
+		}
+		return false;
+	}
+
+//	float test = 1.0f;
+	void LateUpdate() {
+		if (dirtyDataMap.Count > 0) {
+			foreach(KeyValuePair<string, object> kvp in dirtyDataMap) {
+				currentDataMap[kvp.Key] = kvp.Value;
+			}
+			if (IsOffsetValid()) {
+				currentDataMap[ServerTimeAtChange] = GetCurrentServerEpochTime();
+			}
+			if (dataRef != null) {
+				dataRef.SetValue (currentDataMap);
+			}
+//			dataRef.SetValue(test++);
+			dirtyDataMap.Clear();
 		}
 	}
 
 	void FixedUpdate ()
 	{
 		RPCItem[] rpcItems = null;
-
 		lock (sync) {
 			rpcItems = new RPCItem[invokeQueue.Count];
-			invokeQueue.CopyTo(rpcItems, 0);
-			invokeQueue.Clear();
+			invokeQueue.CopyTo (rpcItems, 0);
+			invokeQueue.Clear ();
 		}
 		if (rpcItems != null) {
 			foreach (RPCItem item in rpcItems) {
@@ -110,23 +168,8 @@ public class FirebaseController : MonoBehaviour {
 			}
 		}
 
-		if (positionRefx != null && positionRefy != null && positionRefz != null) {
-			if (isNPC) {
-				Vector3 raw = new Vector3(positionx,  
-						positiony, 
-						positionz);
-
-				rigidBody.position = transform != null ? transform(raw) : raw;
-			}
-			else {
-				positionMap["x"] = rigidBody.position.x;
-				positionMap["y"] = rigidBody.position.y;
-				positionMap["z"] = rigidBody.position.z;
-				positionRef.SetValue(positionMap);
-//				positionRefx.SetValue (GetComponent<Rigidbody> ().position.x);
-//				positionRefy.SetValue (GetComponent<Rigidbody> ().position.y);
-//				positionRefz.SetValue (GetComponent<Rigidbody> ().position.z);
-			}
+		if (incomingDataMap != null && incomingDataMap != currentDataMap) {
+			currentDataMap = incomingDataMap;
 		}
 	}
 }

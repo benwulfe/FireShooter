@@ -5,7 +5,9 @@ using System;
 public interface IQuery  {
 	event EventHandler<ChangedEventArgs> ValueUpdated;
 	event EventHandler<ChangedEventArgs> ChildAdded;
-
+	event EventHandler<ChangedEventArgs> ChildRemoved;
+	event EventHandler<ChangedEventArgs> ChildChanged;
+	event EventHandler<ChangedEventArgs> ChildMoved;
 	event EventHandler<ErrorEventArgs> Error;
 }
 
@@ -16,6 +18,6 @@ public class ChangedEventArgs : EventArgs
 
 public class ErrorEventArgs : EventArgs 
 {
-	public IFirebaseError Error { get; set; }
+	public FirebaseError Error { get; set; }
 }
 

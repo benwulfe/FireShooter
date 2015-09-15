@@ -3,7 +3,7 @@ using System.Collections;
 using System;
 
 #if UNITY_ANDROID
-internal class FirebaseErrorAndroidImpl : IFirebaseError {
+internal class FirebaseErrorAndroidImpl  {
 	object firebaseErrorRef;
 	
 	public FirebaseErrorAndroidImpl(object nativeReference) {
@@ -19,26 +19,26 @@ internal class FirebaseErrorAndroidImpl : IFirebaseError {
 	}
 	
 	
-	public int GetCode() {
-		
-		return GetJavaObject().Call<int> ("getCode");
-		
+	public int Code {
+		get {
+			return GetJavaObject ().Call<int> ("getCode");
+		}
 	}
 	
-	public string GetMessage() {
-		
-		return GetJavaObject().Call<string> ("getMessage");
-		
+	public string Message {
+		get {
+			return GetJavaObject ().Call<string> ("getMessage");
+		}
 	}
 	
-	public string GetDetails() {
-		
-		return GetJavaObject().Call<string> ("getDetails");
-		
+	public string Details {
+		get {
+			return GetJavaObject ().Call<string> ("getDetails");
+		}
 	}
 	
 	public override string ToString() {
-		return "FirebaseError: " + GetMessage();
+		return "FirebaseError: " + Message;
 	}
 
 }

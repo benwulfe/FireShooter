@@ -23,13 +23,15 @@ internal class FirebaseAndroidImpl : QueryAndroidImpl, IFirebase
 	{
 		if (!initialized) {
 			try {
+				initialized = true;
+#if UNITY_ANDROID
 				Debug.Log ("Firebase: attempting to initialize");
 				AndroidJavaClass unityPlayer = new AndroidJavaClass ("com.unity3d.player.UnityPlayer"); 
 				AndroidJavaObject currentContext = unityPlayer.GetStatic<AndroidJavaObject> ("currentActivity");
 				AndroidJavaClass firebaseClass = new AndroidJavaClass ("com.firebase.client.Firebase"); 
 				firebaseClass.CallStatic ("setAndroidContext", currentContext);
-				initialized = true;
 				Debug.Log ("Firebase: set Context!");
+#endif
 			} catch (Exception e) {
 				Debug.Log (e.ToString ());
 			}
@@ -42,19 +44,25 @@ internal class FirebaseAndroidImpl : QueryAndroidImpl, IFirebase
 		return new FirebaseAndroidImpl(GetJavaObject().Call<AndroidJavaObject>("child", name));
 	}
 	
-	public IFirebase GetParent ()
+	public IFirebase Parent 
 	{
-		return new FirebaseAndroidImpl(GetJavaObject().Call<AndroidJavaObject>("getParent"));
+		get {
+			return new FirebaseAndroidImpl (GetJavaObject ().Call<AndroidJavaObject> ("getParent"));
+		}
 	}
 	
-	public IFirebase GetRoot ()
+	public IFirebase Root
 	{
-		return new FirebaseAndroidImpl(GetJavaObject().Call<AndroidJavaObject>("getRoot"));
+		get {
+			return new FirebaseAndroidImpl (GetJavaObject ().Call<AndroidJavaObject> ("getRoot"));
+		}
 	}
 	
-	public string GetKey ()
+	public string Key
 	{
-		return GetJavaObject().Call<string>("getKey");
+		get {
+			return GetJavaObject ().Call<string> ("getKey");
+		}
 	}
 	
 	public IFirebase Push ()
@@ -67,7 +75,7 @@ internal class FirebaseAndroidImpl : QueryAndroidImpl, IFirebase
 		GetJavaObject().Call ("setValue", value);
 	}
 	
-	public void SetValue (string value, string priority, Action<IFirebaseError, IFirebase> listener)
+	public void SetValue (string value, string priority, Action<FirebaseError, IFirebase> listener)
 	{
 		GetJavaObject().Call ("setValue", value, priority, new CompletionListener(listener));
 	}
@@ -83,7 +91,7 @@ internal class FirebaseAndroidImpl : QueryAndroidImpl, IFirebase
 		GetJavaObject().Call ("setValue", jsonObject);
 	}
 	
-	public void SetValue (float value, string priority, Action<IFirebaseError, IFirebase> listener)
+	public void SetValue (float value, string priority, Action<FirebaseError, IFirebase> listener)
 	{
 		GetJavaObject().Call ("setValue", new AndroidJavaObject ("java.lang.Float", value), priority, new CompletionListener(listener));
 	}
@@ -93,16 +101,59 @@ internal class FirebaseAndroidImpl : QueryAndroidImpl, IFirebase
 		GetJavaObject().Call ("setPriority", priority);
 	}
 	
-	public void SetPriority (string priority, Action<IFirebaseError,IFirebase> listener)
+	public void SetPriority (string priority, Action<FirebaseError,IFirebase> listener)
 	{
 		GetJavaObject().Call ("setPriority", priority, new CompletionListener(listener));
 	}
-	
+
+	#region IFirebase implementation
+	public void AuthWithCustomToken (string token, Action<AuthData> onSuccess, Action<FirebaseError> onError)
+	{
+		GetJavaObject ().Call ("authWithCustomToken", token, new AuthResultListener (onSuccess, onError));
+	}
+
+	public void AuthAnonymously (Action<AuthData> onSuccess, Action<FirebaseError> onError)
+	{
+		GetJavaObject ().Call ("authAnonymously", new AuthResultListener (onSuccess, onError));
+	}
+
+	public void AuthWithPassword (string email, string password, Action<AuthData> onSuccess, Action<FirebaseError> onError)
+	{
+		GetJavaObject ().Call ("authWithPassword", email, password, new AuthResultListener (onSuccess, onError));
+	}
+
+	public void AuthWithOAuthToken (string provider, string token, Action<AuthData> onSuccess, Action<FirebaseError> onError)
+	{
+		GetJavaObject ().Call ("authWithOAuthToken", provider, token, new AuthResultListener (onSuccess, onError));
+	}
+
+	public void UnAuth ()
+	{
+		GetJavaObject ().Call ("unauth");
+	}
+
+	public AuthData Auth {
+		get {
+			string token = null;
+			string uid = null;
+			long expiration = 0;
+			AndroidJavaObject authData = GetJavaObject().Call<AndroidJavaObject>("getAuth");
+
+			if (authData != null) {
+				token = authData.Call<string>("getToken");
+				uid = authData.Call<string>("getUid");
+				expiration = authData.Call<long>("getExpires");
+			}
+
+			return new AuthData(token, uid, expiration);
+		}
+	}
+	#endregion	
 	
 	class CompletionListener : AndroidJavaProxy {
-		private Action<IFirebaseError,IFirebase> completionListener;
+		private Action<FirebaseError,IFirebase> completionListener;
 		
-		public CompletionListener(Action<IFirebaseError,IFirebase> listener)
+		public CompletionListener(Action<FirebaseError,IFirebase> listener)
 			:base("com.firebase.client.Firebase$CompletionListener")
 		{
 			completionListener = listener;
@@ -110,9 +161,44 @@ internal class FirebaseAndroidImpl : QueryAndroidImpl, IFirebase
 		
 		void onComplete(AndroidJavaObject error, AndroidJavaObject reference) {
 			if (completionListener != null) {
-				completionListener (error != null ? new FirebaseErrorAndroidImpl (error) : null, new FirebaseAndroidImpl (reference));
+				completionListener (null, new FirebaseAndroidImpl (reference));
 			}
 		} 
+	}
+
+	class AuthResultListener : AndroidJavaProxy {
+		Action<AuthData> onSuccess;
+		Action<FirebaseError> onError;
+
+		public AuthResultListener(Action<AuthData> onSuccess, Action<FirebaseError> onError)
+			:base("com.firebase.client.Firebase$AuthResultHandler")
+		{
+			this.onError = onError;
+			this.onSuccess = onSuccess;
+		}
+
+	    void onAuthenticated(AndroidJavaObject authData) {
+			string token = null;
+			string uid = null;
+			long expiration = 0;
+			if (authData != null) {
+				token = authData.Call<string>("getToken");
+				uid = authData.Call<string>("getUid");
+				expiration = authData.Call<long>("getExpires");
+			}
+			if (onSuccess != null) {
+				onSuccess(new AuthData( token, uid, expiration));
+			}
+		}
+		
+
+		void onAuthenticationError(AndroidJavaObject firebaseError) {
+			FirebaseErrorAndroidImpl errorImpl = new FirebaseErrorAndroidImpl (firebaseError);
+			if (onError != null) {
+				onError(new FirebaseError( errorImpl.Code, 
+      					errorImpl.Message, errorImpl.Details));
+			}
+		}
 	}
 
 	public class Factory : IFirebaseFactory
@@ -123,6 +209,7 @@ internal class FirebaseAndroidImpl : QueryAndroidImpl, IFirebase
 			if (Application.platform == RuntimePlatform.Android) {
 				return new FirebaseAndroidImpl (path);
 			}
+
 			return null;
 		}
 		#endregion

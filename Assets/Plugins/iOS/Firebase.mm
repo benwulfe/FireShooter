@@ -23,6 +23,8 @@ char* MakeStringCopy (const char* string)
 
 extern "C" {
     typedef void (*OnValueChanged)(void*, void* );
+    typedef void (*OnAuthSuccessHandler)(long reference, const char* token, const char* uid, long expiration);
+    typedef void (*OnAuthCancelHandler)(long reference, int code, const char* message, const char* details);
     
     void* _FirebaseNew (const char *path)
     {
@@ -116,6 +118,140 @@ extern "C" {
         [myFirebaseRef observeEventType:FEventTypeChildAdded withBlock:^(FDataSnapshot *snapshot) {
             onChanged((void*)CFBridgingRetain(snapshot), refId);
         }];
+    }
+    
+    void _FirebaseObserveChildRemoved( void* firebase, OnValueChanged onChanged, void* refId) {
+        Firebase *myFirebaseRef = (__bridge Firebase*) (firebase);
+        [myFirebaseRef observeEventType:FEventTypeChildRemoved withBlock:^(FDataSnapshot *snapshot) {
+            onChanged((void*)CFBridgingRetain(snapshot), refId);
+        }];
+    }
+    
+    void _FirebaseObserveChildChanged( void* firebase, OnValueChanged onChanged, void* refId) {
+        Firebase *myFirebaseRef = (__bridge Firebase*) (firebase);
+        [myFirebaseRef observeEventType:FEventTypeChildChanged withBlock:^(FDataSnapshot *snapshot) {
+            onChanged((void*)CFBridgingRetain(snapshot), refId);
+        }];
+    }
+    
+    void _FirebaseObserveChildMoved( void* firebase, OnValueChanged onChanged, void* refId) {
+        Firebase *myFirebaseRef = (__bridge Firebase*) (firebase);
+        [myFirebaseRef observeEventType:FEventTypeChildMoved withBlock:^(FDataSnapshot *snapshot) {
+            onChanged((void*)CFBridgingRetain(snapshot), refId);
+        }];
+    }
+    
+    void _FirebaseRemoveObservers( void* firebase) {
+        Firebase *myFirebaseRef = (__bridge Firebase*) (firebase);
+        [myFirebaseRef removeAllObservers];
+    }
+    
+    void _FirebaseAuthWithCustomToken (void* firebase, const char* token,
+                                       OnAuthSuccessHandler success, OnAuthCancelHandler cancel,
+                                       long callback) {
+        Firebase *myFirebaseRef = (__bridge Firebase*) (firebase);
+        [myFirebaseRef authWithCustomToken:CreateNSString(token)
+                       withCompletionBlock:^(NSError *error, FAuthData *authData) {
+                           if (error) {
+                               cancel(callback, [error code],
+                                      MakeStringCopy([[error localizedFailureReason] UTF8String]),
+                                      MakeStringCopy([[error localizedDescription] UTF8String]));
+                           } else {
+                               // user is logged in, check authData for data
+                               success(callback, MakeStringCopy([[authData token] UTF8String]),
+                                       MakeStringCopy([[authData uid] UTF8String]), [[authData expires] longValue]);
+                           }
+                       }];
+    }
+                           
+    void _FirebaseAuthAnonymously (void* firebase,
+                                   OnAuthSuccessHandler success, OnAuthCancelHandler cancel,
+                                   long callback) {
+        Firebase *myFirebaseRef = (__bridge Firebase*) (firebase);
+        [myFirebaseRef authAnonymouslyWithCompletionBlock:^(NSError *error, FAuthData *authData) {
+            if (error) {
+                cancel(callback, [error code],
+                       MakeStringCopy([[error localizedFailureReason] UTF8String]),
+                       MakeStringCopy([[error localizedDescription] UTF8String]));
+            } else {
+                // user is logged in, check authData for data
+                success(callback, MakeStringCopy([[authData token] UTF8String]),
+                        MakeStringCopy([[authData uid] UTF8String]), [[authData expires] longValue]);
+            }
+        }];
+    }
+    
+    void _FirebaseAuthWithPassword (void* firebase, const char* email,
+                                    const char* password,
+                                    OnAuthSuccessHandler success, OnAuthCancelHandler cancel,
+                                    long callback) {
+        Firebase *myFirebaseRef = (__bridge Firebase*) (firebase);
+        [myFirebaseRef authUser:CreateNSString(email) password:CreateNSString(password)
+            withCompletionBlock:^(NSError *error, FAuthData *authData) {
+                if (error) {
+                    cancel(callback, [error code],
+                           MakeStringCopy([[error localizedFailureReason] UTF8String]),
+                           MakeStringCopy([[error localizedDescription] UTF8String]));
+                } else {
+                    // user is logged in, check authData for data
+                    success(callback, MakeStringCopy([[authData token] UTF8String]),
+                            MakeStringCopy([[authData uid] UTF8String]), [[authData expires] longValue]);
+                }
+            }];
+    }
+    
+    void _FirebaseAuthWithOAuthToken (void* firebase, const char* provider,
+                                      const char* token,
+                                      OnAuthSuccessHandler success, OnAuthCancelHandler cancel,
+                                      long callback) {
+        Firebase *myFirebaseRef = (__bridge Firebase*) (firebase);
+        [myFirebaseRef authWithOAuthProvider:CreateNSString(provider) token:CreateNSString(token)
+                         withCompletionBlock:^(NSError *error, FAuthData *authData) {
+                             if (error) {
+                                 cancel(callback, [error code],
+                                        MakeStringCopy([[error localizedFailureReason] UTF8String]),
+                                        MakeStringCopy([[error localizedDescription] UTF8String]));
+                             } else {
+                                 // user is logged in, check authData for data
+                                 success(callback, MakeStringCopy([[authData token] UTF8String]),
+                                         MakeStringCopy([[authData uid] UTF8String]), [[authData expires] longValue]);
+                             }
+                         }];
+    }
+    
+    const char* _FirebaseGetAuthToken(void* firebase) {
+        Firebase *myFirebaseRef = (__bridge Firebase*) (firebase);
+        FAuthData* authData = [myFirebaseRef authData];
+        if (authData == nil) {
+            return nil;
+        }
+
+        return MakeStringCopy([[authData token] UTF8String]);
+    }
+                               
+    const char* _FirebaseGetAuthUid(void* firebase) {
+        Firebase *myFirebaseRef = (__bridge Firebase*) (firebase);
+        FAuthData* authData = [myFirebaseRef authData];
+        if (authData == nil) {
+            return nil;
+        }
+        
+        return MakeStringCopy([[authData uid] UTF8String]);
+    }
+                               
+    long _FirebaseGetAuthExpiration(void* firebase) {
+        Firebase *myFirebaseRef = (__bridge Firebase*) (firebase);
+        FAuthData* authData = [myFirebaseRef authData];
+        if (authData == nil) {
+            return 0;
+        }
+        
+        return [[authData expires] longValue];
+    }
+    
+    void _FirebaseUnAuth( void* firebase) {
+        Firebase *myFirebaseRef = (__bridge Firebase*) (firebase);
+        [myFirebaseRef unauth];
     }
     
     float _DataSnapshotGetFloatValue (void* datasnapshot) {
